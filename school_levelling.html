@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avventura Scolastica RPG</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* CSS INIZIO */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5; /* Sfondo leggermente diverso */
+            color: #333;
+            padding-top: 20px; /* Spazio per non sovrapporre contenuti all'inizio */
+        }
+
+        .container {
+            max-width: 1300px; /* Aumentato per più contenuti */
+        }
+
+        .card-header {
+            font-weight: bold;
+        }
+
+        .card-header.bg-primary { background-color: #007bff !important; }
+        .card-header.bg-info { background-color: #17a2b8 !important; }
+        .card-header.bg-success { background-color: #28a745 !important; }
+        .card-header.bg-warning { background-color: #ffc107 !important; color: #212529 !important; }
+        .card-header.bg-secondary { background-color: #6c757d !important; }
+        .card-header.bg-danger { background-color: #dc3545 !important; }
+
+
+        #character-creation-screen .card {
+            border: 2px solid #007bff;
+        }
+
+        #main-dashboard .card {
+            margin-bottom: 20px;
+        }
+
+        .attribute-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #007bff;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+
+        .attribute-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #007bff;
+            cursor: pointer;
+            border-radius: 50%;
+            border: none;
+        }
+
+        .mission-card, .challenge-card {
+            border-left: 5px solid #ffc107;
+            margin-bottom: 15px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .mission-card h5, .challenge-card h5 {
+            margin-top: 0;
+            color: #5a5a5a;
+        }
+
+        .mission-card .btn-success, .challenge-card .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+
+        .completed-mission, .completed-challenge {
+            border-left: 5px solid #28a745;
+            opacity: 0.7;
+            background-color: #e9f5ee;
+        }
+        .completed-mission .btn-success, .completed-challenge .btn-success {
+            display: none; /* Nasconde il bottone completa se già completato */
+        }
+
+
+        #unlocked-skills .skill, #inventory-display .inventory-item {
+            padding: 8px;
+            margin-bottom: 5px;
+            background-color: #e0f2f1;
+            border: 1px solid #b2dfdb;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #unlocked-skills .skill:hover, #inventory-display .inventory-item:hover {
+            background-color: #b2dfdb;
+        }
+
+        .inventory-item .item-icon {
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+        /* CSS FINE */
+    </style>
+</head>
+<body>
+    <div class="container mt-3 mb-5">
+        <div id="character-creation-screen">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2>Crea il Tuo Eroe Scolastico!</h2>
+                </div>
+                <div class="card-body">
+                    <form id="character-form">
+                        <div class="form-group">
+                            <label for="char-name">Nome del Personaggio:</label>
+                            <input type="text" class="form-control" id="char-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="char-age">Età:</label>
+                            <input type="number" class="form-control" id="char-age" min="10" max="99" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="char-class">Classe RPG:</label>
+                            <select class="form-control" id="char-class">
+                                <option value="Studioso Diligente">Studioso Diligente (Bonus Comprensione)</option>
+                                <option value="Mago dell'Organizzazione">Mago dell'Organizzazione (Bonus Organizzazione)</option>
+                                <option value="Guerriero della Concentrazione">Guerriero della Concentrazione (Bonus Concentrazione)</option>
+                                <option value="Esploratore della Curiosità">Esploratore della Curiosità (Bonus Curiosità)</option>
+                                <option value="custom">Personalizzata...</option>
+                            </select>
+                            <input type="text" class="form-control mt-2" id="custom-char-class-name" placeholder="Nome Classe Personalizzata" style="display:none;">
+                        </div>
+
+                        <h4 class="mt-4">Distribuisci Punti Attributo (Totale <span id="total-attribute-points-budget">30</span> punti iniziali da distribuire)</h4>
+                        <p>Punti rimanenti: <span id="attribute-points-remaining" class="font-weight-bold">30</span></p>
+                        <div class="row">
+                            <div id="attribute-sliders-container" class="col-12 row"></div>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-lg btn-block mt-3">Inizia l'Avventura!</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="main-dashboard" class="mt-4" style="display:none;">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card shadow mb-3">
+                        <div class="card-header bg-info text-white">
+                            <h3 id="player-name-display">Nome Eroe</h3>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Classe:</strong> <span id="player-class-display"></span></p>
+                            <p><strong>Età:</strong> <span id="player-age-display"></span></p>
+                            <p><strong>Livello:</strong> <span id="player-level">1</span></p>
+                            <p><strong>XP:</strong> <span id="player-xp">0</span> / <span id="xp-to-next-level">100</span></p>
+                            <div class="progress mb-3" style="height: 25px;">
+                                <div id="xp-progress-bar" class="progress-bar bg-warning progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                            </div>
+                            <hr>
+                            <h5>Attributi <span id="attribute-points-to-spend-info" class="badge badge-success ml-2" style="display:none;"></span></h5>
+                            <ul class="list-unstyled" id="attributes-display"></ul>
+                            <button id="reset-character" class="btn btn-danger btn-sm mt-3 btn-block">Ricrea Personaggio</button>
+                        </div>
+                    </div>
+
+                    <div class="card shadow mb-3">
+                        <div class="card-header bg-success text-white">
+                            <h4>Abilità Sbloccate</h4>
+                        </div>
+                        <div class="card-body" id="unlocked-skills">
+                            <p>Completa missioni e sali di livello per sbloccare nuove abilità!</p>
+                        </div>
+                    </div>
+
+                    <div class="card shadow mb-3">
+                        <div class="card-header bg-secondary text-white">
+                            <h4>Inventario</h4>
+                        </div>
+                        <div class="card-body" id="inventory-display">
+                            <p>Nessun oggetto.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-8">
+                    <div class="card shadow mb-3">
+                        <div class="card-header bg-info text-white"> <h3>Sfide Speciali</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="daily-challenge-area" class="mb-3">
+                                <h5><span class="badge badge-pill badge-primary mr-2">QUOTIDIANA</span><span id="daily-challenge-title">Nessuna sfida giornaliera attiva</span></h5>
+                                <div id="daily-challenge-display" class="challenge-card" style="display:none;"></div>
+                            </div>
+                            <hr>
+                            <div id="weekly-challenge-area">
+                                <h5><span class="badge badge-pill badge-danger mr-2">SETTIMANALE</span><span id="weekly-challenge-title">Nessuna sfida settimanale attiva</span></h5>
+                                <div id="weekly-challenge-display" class="challenge-card" style="display:none;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow mb-3">
+                        <div class="card-header bg-warning text-dark">
+                            <h3>Registro Missioni</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="add-mission-form" class="mb-4">
+                                <h5>Aggiungi Nuova Missione:</h5>
+                                <div class="form-group">
+                                    <label for="mission-title">Titolo Missione:</label>
+                                    <input type="text" class="form-control" id="mission-title" placeholder="Es. Studiare Capitolo 5 di Matematica" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="mission-description">Descrizione:</label>
+                                    <textarea class="form-control" id="mission-description" rows="2" placeholder="Es. Rileggere, fare schemi, esercizi"></textarea>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group col-md-6">
+                                        <label for="mission-subject">Materia/Area (opzionale):</label>
+                                        <input type="text" class="form-control" id="mission-subject" placeholder="Es. Matematica, Storia">
+                                    </div>
+                                    <div class="form-group col-md-6">
+                                        <label for="mission-xp-reward">Ricompensa XP:</label>
+                                        <input type="number" class="form-control" id="mission-xp-reward" value="20" min="5" max="200" required>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="mission-attribute-boost">Attributo Primario Potenziato (opzionale):</label>
+                                    <select class="form-control" id="mission-attribute-boost">
+                                        </select>
+                                </div>
+                                 <div class="form-group">
+                                    <label for="mission-item-reward">Oggetto Ricompensa Speciale (opzionale):</label>
+                                    <select class="form-control" id="mission-item-reward">
+                                        <option value="">Nessuno</option>
+                                        </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Aggiungi Missione</button>
+                            </form>
+                            <hr>
+                            <h5>Missioni Attive (<span id="active-missions-count">0</span>):</h5>
+                            <div id="active-missions-list">
+                                <p>Nessuna missione attiva. Aggiungine una!</p>
+                            </div>
+                            <hr>
+                            <h5>Missioni Completate (<span id="completed-missions-count">0</span>):</h5>
+                            <div id="completed-missions-list">
+                                </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="notificationModal" tabindex="-1" role="dialog" aria-labelledby="notificationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="notificationModalLabel">Notifica!</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="notificationModalBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Chiudi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+    // JAVASCRIPT INIZIO
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Elementi DOM ---
+        const characterCreationScreen = document.getElementById('character-creation-screen');
+        const mainDashboard = document.getElementById('main-dashboard');
+        const characterForm = document.getElementById('character-form');
+        const charClassSelect = document.getElementById('char-class');
+        const customCharClassNameInput = document.getElementById('custom-char-class-name');
+        const attributeSlidersContainer = document.getElementById('attribute-sliders-container');
+        const attributePointsRemainingDisplay = document.getElementById('attribute-points-remaining');
+        const totalAttributePointsBudgetDisplay = document.getElementById('total-attribute-points-budget');
+
+
+        // Dashboard Elements
+        const playerNameDisplay = document.getElementById('player-name-display');
+        const playerClassDisplay = document.getElementById('player-class-display');
+        const playerAgeDisplay = document.getElementById('player-age-display');
+        const playerLevel = document.getElementById('player-level');
+        const playerXp = document.getElementById('player-xp');
+        const xpToNextLevelDisplay = document.getElementById('xp-to-next-level');
+        const xpProgressBar = document.getElementById('xp-progress-bar');
+        const attributesDisplay = document.getElementById('attributes-display');
+        const attributePointsToSpendInfo = document.getElementById('attribute-points-to-spend-info');
+        const unlockedSkillsDisplay = document.getElementById('unlocked-skills');
+        const inventoryDisplay = document.getElementById('inventory-display');
+
+        // Mission Form & Lists
+        const addMissionForm = document.getElementById('add-mission-form');
+        const activeMissionsList = document.getElementById('active-missions-list');
+        const completedMissionsList = document.getElementById('completed-missions-list');
+        const activeMissionsCount = document.getElementById('active-missions-count');
+        const completedMissionsCount = document.getElementById('completed-missions-count');
+        const missionAttributeBoostSelect = document.getElementById('mission-attribute-boost');
+        const missionItemRewardSelect = document.getElementById('mission-item-reward');
+
+
+        // Challenges
+        const dailyChallengeTitleDisplay = document.getElementById('daily-challenge-title');
+        const dailyChallengeDisplay = document.getElementById('daily-challenge-display');
+        const weeklyChallengeTitleDisplay = document.getElementById('weekly-challenge-title');
+        const weeklyChallengeDisplay = document.getElementById('weekly-challenge-display');
+
+        // Reset Button
+        const resetCharacterButton = document.getElementById('reset-character');
+
+        // --- Configurazione Globale ---
+        const BASE_ATTRIBUTE_POINTS = 30; // Punti da distribuire alla creazione
+        totalAttributePointsBudgetDisplay.textContent = BASE_ATTRIBUTE_POINTS;
+
+        const ATTRIBUTES_CONFIG = {
+            disciplina: { name: "Disciplina", initial: 1, description: "La capacità di mantenere l'impegno e seguire le regole." },
+            comprensione: { name: "Comprensione", initial: 1, description: "La facilità nell'afferrare nuovi concetti." },
+            impegno: { name: "Impegno", initial: 1, description: "La quantità di sforzo profuso nello studio." },
+            organizzazione: { name: "Organizzazione", initial: 1, description: "L'abilità nel pianificare e gestire materiali e tempo." },
+            collaborazione: { name: "Collaborazione", initial: 1, description: "La capacità di lavorare efficacemente con gli altri." },
+            concentrazione: { name: "Concentrazione", initial: 1, description: "L'abilità di focalizzarsi senza distrazioni." },
+            curiosita: { name: "Curiosità", initial: 1, description: "Il desiderio di esplorare e imparare cose nuove." },
+            ragionamento: { name: "Ragionamento", initial: 1, description: "L'abilità di pensare logicamente e risolvere problemi." },
+            memoria: { name: "Memoria", initial: 1, description: "La capacità di ricordare informazioni." },
+            autonomia: { name: "Autonomia", initial: 1, description: "L'indipendenza nello svolgere i compiti e prendere iniziative." },
+        };
+
+        const CLASS_BONUSES = {
+            "Studioso Diligente": { comprensione: 2, memoria: 1 },
+            "Mago dell'Organizzazione": { organizzazione: 2, disciplina: 1 },
+            "Guerriero della Concentrazione": { concentrazione: 2, impegno: 1 },
+            "Esploratore della Curiosità": { curiosita: 2, ragionamento: 1 }
+        };
+
+        const SKILLS_BY_LEVEL = {
+            1: [], // Nessuna abilità speciale al livello 1, ma potrebbero esserci suggerimenti base
+            2: [{ id: "pomodoro", name: "Tecnica del Pomodoro", description: "Studia intensamente per 25 minuti, poi fai una pausa di 5 minuti. Ripeti 4 volte, poi pausa più lunga. Ottimizza la concentrazione e previene il burnout." }],
+            3: [{ id: "schemi", name: "Mappe Mentali Efficaci", description: "Organizza concetti chiave in diagrammi visuali. Collega idee, usa colori e immagini per migliorare la comprensione e la memorizzazione a lungo termine." }],
+            4: [{ id: "ripasso_attivo", name: "Ripasso Attivo", description: "Invece di rileggere passivamente, mettiti alla prova: rispondi a domande, insegna il concetto a qualcun altro (anche immaginario), o riscrivi le note con parole tue."}],
+            5: [{ id: "guida_sapiente", name: "Consultare il Saggio (Professore)", description: "Prepara domande specifiche e non aver timore di chiedere chiarimenti ai professori durante l'orario di ricevimento o dopo la lezione. È una risorsa preziosa!" }],
+            6: [{ id: "ambiente_studio", name: "Ottimizzazione Ambiente Studio", description: "Crea uno spazio di studio dedicato, ordinato, ben illuminato e privo di distrazioni (smartphone in modalità silenziosa e lontano!)."}]
+        };
+
+        const ITEMS_DATABASE = {
+            'talismano_chiarezza': { id: 'talismano_chiarezza', name: "Talismano della Chiarezza", description: "Un piccolo cristallo che sembra vibrare di conoscenza. Bonus +1 Comprensione.", type: 'passive_bonus', effect: { attribute: 'comprensione', bonus: 1 }, icon: '💎', rarity: 'comune' },
+            'diario_studioso': { id: 'diario_studioso', name: "Diario dello Studioso Organizzato", description: "Pagine piene di metodi per organizzare il tempo e gli appunti. Bonus +1 Organizzazione.", type: 'passive_bonus', effect: { attribute: 'organizzazione', bonus: 1 }, icon: '📓', rarity: 'comune' },
+            'lente_focus': {id: 'lente_focus', name: "Lente del Focus Arcano", description: "Una lente che aiuta a non perdere di vista l'obiettivo. Bonus +1 Concentrazione.", type: 'passive_bonus', effect: { attribute: 'concentrazione', bonus: 1}, icon: '🔎', rarity: 'comune'},
+            'elisir_curiosita': {id: 'elisir_curiosita', name: "Elisir della Curiosità Frizzante", description: "Una pozione che stimola la voglia di apprendere. Bonus +1 Curiosità.", type: 'passive_bonus', effect: {attribute: 'curiosita', bonus: 1}, icon: '🧪', rarity: 'non_comune'},
+            'pergamena_saggezza': {id: 'pergamena_saggezza', name: "Pergamena della Saggezza Antica", description: "Contiene un frammento di conoscenza perduta. Sblocca un suggerimento di studio avanzato (visualizzabile).", type: 'guide', icon: '📜', rarity: 'raro', unlocksSkillTip: { name: "Tecnica di Feynman", description: "Per capire veramente un concetto, prova a spiegarlo con parole semplici, come se lo insegnassi a un bambino. Identifica le lacune nella tua comprensione e approfondisci."}},
+            'amuleto_resilienza': {id: 'amuleto_resilienza', name: "Amuleto della Resilienza Studentesca", description: "Aiuta a superare i momenti di difficoltà. Bonus +1 Impegno.", type: 'passive_bonus', effect: {attribute: 'impegno', bonus: 1}, icon: '🛡️', rarity: 'non_comune'}
+        };
+
+        const ITEMS_BY_LEVEL = {
+            2: ['diario_studioso'],
+            4: ['lente_focus'],
+            6: ['elisir_curiosita'],
+            8: ['pergamena_saggezza'],
+            10: ['amuleto_resilienza']
+        };
+
+        const DAILY_CHALLENGES_POOL = [
+            { id: 'dc1', title: "Micro-Ripasso Mattutino", description: "Dedica 10 minuti al ripasso di un argomento del giorno prima appena sveglio.", xp: 15, attributeBoost: 'memoria' },
+            { id: 'dc2', title: "Organizza la Scrivania", description: "Assicurati che la tua postazione di studio sia pulita e ordinata prima di iniziare.", xp: 10, attributeBoost: 'organizzazione' },
+            { id: 'dc3', title: "Domanda Curiosa", description: "Pensa ad una domanda interessante su un argomento scolastico e cercala online o chiedi al prof.", xp: 20, attributeBoost: 'curiosita' },
+            { id: 'dc4', title: "Pausa Attiva", description: "Fai una pausa di 5 minuti ogni ora di studio, alzandoti e muovendoti un po'.", xp: 5 },
+            { id: 'dc5', title: "Un Esercizio Extra", description: "Svolgi un esercizio in più (non assegnato) per una materia a tua scelta.", xp: 25, attributeBoost: 'impegno'}
+        ];
+        const WEEKLY_CHALLENGES_POOL = [
+            { id: 'wc1', title: "Pianificazione Strategica Settimanale", description: "All'inizio della settimana, pianifica tutte le tue sessioni di studio, scadenze e obiettivi per i prossimi 7 giorni.", xp: 75, attributeBoost: 'organizzazione' },
+            { id: 'wc2', title: "Approfondimento Tematico", description: "Scegli un argomento che ti appassiona o in cui sei carente e dedicagli almeno 2 ore di studio approfondito durante la settimana.", xp: 100, attributeBoost: 'comprensione' },
+            { id: 'wc3', title: "Revisione Generale del Weekend", description: "Dedica 1-2 ore nel weekend a rivedere tutto il materiale trattato durante la settimana.", xp: 80, attributeBoost: 'memoria' },
+            { id: 'wc4', title: "Insegna Qualcosa", description: "Spiega un concetto che hai imparato questa settimana a un amico, familiare o anche solo a te stesso ad alta voce.", xp: 60, attributeBoost: 'ragionamento'}
+        ];
+
+        let character = null;
+        let missions = []; // { id, title, description, subject, xpReward, attributeBoost, itemReward, completed }
+        let gameData = { // Per dati non legati strettamente al personaggio ma al gioco
+            lastDailyReset: null,
+            lastWeeklyReset: null,
+            activeDailyChallenge: null, // { challengeId, completed }
+            activeWeeklyChallenge: null
+        };
+
+
+        // --- Funzioni Utilità ---
+        function getTodayDateString() {
+            return new Date().toDateString();
+        }
+
+        function getStartOfWeekDateString(date = new Date()) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+            return new Date(d.setDate(diff)).toDateString();
+        }
+
+        function showNotificationModal(title, message, type = 'info') {
+            const modalHeader = document.querySelector('#notificationModal .modal-header');
+            modalHeader.classList.remove('bg-success', 'bg-warning', 'bg-danger', 'bg-info'); // Rimuovi classi precedenti
+            if (type === 'success') modalHeader.classList.add('bg-success', 'text-white');
+            else if (type === 'warning') modalHeader.classList.add('bg-warning', 'text-dark');
+            else if (type === 'error') modalHeader.classList.add('bg-danger', 'text-white');
+            else modalHeader.classList.add('bg-info', 'text-white');
+
+            document.getElementById('notificationModalLabel').textContent = title;
+            document.getElementById('notificationModalBody').innerHTML = message;
+            $('#notificationModal').modal('show');
+        }
+
+        function populateSelectWithOptions(selectElement, optionsObject, includeNoneOption = true, noneOptionText = "Nessuno") {
+            selectElement.innerHTML = ''; // Clear existing options
+            if (includeNoneOption) {
+                const noneOption = document.createElement('option');
+                noneOption.value = "";
+                noneOption.textContent = noneOptionText;
+                selectElement.appendChild(noneOption);
+            }
+            for (const key in optionsObject) {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = optionsObject[key].name;
+                selectElement.appendChild(option);
+            }
+        }
+
+
+        // --- Setup Iniziale ---
+        function initializeAttributeSliders() {
+            attributeSlidersContainer.innerHTML = ''; // Pulisci
+            let totalInitialValue = 0;
+            for (const attrKey in ATTRIBUTES_CONFIG) {
+                const attrConfig = ATTRIBUTES_CONFIG[attrKey];
+                const initialValue = attrConfig.initial;
+                totalInitialValue += initialValue;
+
+                const colDiv = document.createElement('div');
+                colDiv.className = 'col-md-6 form-group';
+
+                const label = document.createElement('label');
+                label.htmlFor = `attr-${attrKey}`;
+                label.innerHTML = `${attrConfig.name}: <span id="val-${attrKey}">${initialValue}</span>`;
+
+                const slider = document.createElement('input');
+                slider.type = 'range';
+                slider.className = 'form-control-range attribute-slider';
+                slider.id = `attr-${attrKey}`;
+                slider.min = 1; // Minimo assoluto
+                slider.max = 10;
+                slider.value = initialValue;
+                slider.dataset.attrKey = attrKey;
+
+                slider.addEventListener('input', (e) => {
+                    document.getElementById(`val-${attrKey}`).textContent = e.target.value;
+                    updateAttributePointsRemaining();
+                });
+
+                colDiv.appendChild(label);
+                colDiv.appendChild(slider);
+                attributeSlidersContainer.appendChild(colDiv);
+            }
+            updateAttributePointsRemaining(); // Calcola i punti rimanenti iniziali
+        }
+
+        function updateAttributePointsRemaining() {
+            let currentTotalSpentOnBase = 0;
+            document.querySelectorAll('.attribute-slider').forEach(slider => {
+                currentTotalSpentOnBase += (parseInt(slider.value) - ATTRIBUTES_CONFIG[slider.dataset.attrKey].initial);
+            });
+            const remainingPoints = BASE_ATTRIBUTE_POINTS - currentTotalSpentOnBase;
+            attributePointsRemainingDisplay.textContent = remainingPoints;
+
+            const submitButton = document.querySelector('#character-form button[type="submit"]');
+            if (remainingPoints < 0) {
+                attributePointsRemainingDisplay.classList.add('text-danger');
+                submitButton.disabled = true;
+            } else {
+                attributePointsRemainingDisplay.classList.remove('text-danger');
+                submitButton.disabled = false;
+            }
+        }
+
+
+        // --- Dati Personaggio e Gioco ---
+        function loadGameData() {
+            const savedCharacter = localStorage.getItem('rpgCharacter_v2'); // v2 per nuova struttura
+            const savedMissions = localStorage.getItem('rpgMissions_v2');
+            const savedGameData = localStorage.getItem('rpgGameData_v2');
+
+            if (savedCharacter) {
+                character = JSON.parse(savedCharacter);
+                missions = savedMissions ? JSON.parse(savedMissions) : [];
+                gameData = savedGameData ? JSON.parse(savedGameData) : gameData; // Usa default se non salvato
+
+                checkAndResetChallenges(); // Deve essere chiamato dopo aver caricato gameData
+                showDashboard();
+                updateDashboardUI();
+                renderMissions();
+            } else {
+                showCreationScreen();
+                initializeAttributeSliders(); // Inizializza slider solo se si crea un nuovo personaggio
+                populateSelectWithOptions(missionAttributeBoostSelect, ATTRIBUTES_CONFIG);
+                populateSelectWithOptions(missionItemRewardSelect, ITEMS_DATABASE, true, "Nessun Oggetto Speciale");
+
+            }
+        }
+
+        function saveGameData() {
+            if (character) localStorage.setItem('rpgCharacter_v2', JSON.stringify(character));
+            localStorage.setItem('rpgMissions_v2', JSON.stringify(missions));
+            localStorage.setItem('rpgGameData_v2', JSON.stringify(gameData));
+        }
+
+        function resetGame() {
+            if (confirm("Sei sicuro di voler resettare il tuo personaggio e tutti i progressi? Questa azione è irreversibile.")) {
+                localStorage.removeItem('rpgCharacter_v2');
+                localStorage.removeItem('rpgMissions_v2');
+                localStorage.removeItem('rpgGameData_v2');
+                character = null;
+                missions = [];
+                gameData = { lastDailyReset: null, lastWeeklyReset: null, activeDailyChallenge: null, activeWeeklyChallenge: null }; // Reset gameData
+                showCreationScreen();
+                initializeAttributeSliders(); // Re-inizializza per la nuova creazione
+            }
+        }
+        resetCharacterButton.addEventListener('click', resetGame);
+
+
+        // --- Gestione Viste ---
+        function showCreationScreen() {
+            characterCreationScreen.style.display = 'block';
+            mainDashboard.style.display = 'none';
+            characterForm.reset();
+            customCharClassNameInput.style.display = 'none';
+            customCharClassNameInput.required = false;
+            // Non chiamare initializeAttributeSliders() qui, ma solo in loadGameData se non c'è personaggio
+        }
+
+        function showDashboard() {
+            characterCreationScreen.style.display = 'none';
+            mainDashboard.style.display = 'block';
+            populateSelectWithOptions(missionAttributeBoostSelect, ATTRIBUTES_CONFIG);
+            populateSelectWithOptions(missionItemRewardSelect, ITEMS_DATABASE, true, "Nessun Oggetto Speciale");
+        }
+
+        // --- Creazione Personaggio ---
+        characterForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('char-name').value.trim();
+            const age = parseInt(document.getElementById('char-age').value);
+            let className = charClassSelect.value;
+            if (className === 'custom') {
+                className = customCharClassNameInput.value.trim() || "Eroe Personalizzato";
+            }
+
+            if (!name) {
+                showNotificationModal("Errore Creazione", "Il nome del personaggio non può essere vuoto.", "error");
+                return;
+            }
+
+            const attributes = {};
+            let currentTotalSliderValue = 0;
+            document.querySelectorAll('.attribute-slider').forEach(slider => {
+                const attrKey = slider.dataset.attrKey;
+                attributes[attrKey] = parseInt(slider.value);
+                currentTotalSliderValue += (parseInt(slider.value) - ATTRIBUTES_CONFIG[attrKey].initial);
+            });
+
+            if (currentTotalSliderValue > BASE_ATTRIBUTE_POINTS) {
+                showNotificationModal("Errore Attributi", "Hai superato il limite di punti attributo disponibili!", "error");
+                return;
+            }
+
+            // Applica bonus di classe
+            const classBonus = CLASS_BONUSES[className];
+            if (classBonus) {
+                for (const attr in classBonus) {
+                    if (attributes[attr]) {
+                        attributes[attr] = Math.min(10, attributes[attr] + classBonus[attr]);
+                    }
+                }
+            }
+
+            character = {
+                name: name,
+                age: age,
+                class: className,
+                level: 1,
+                xp: 0,
+                attributes: attributes,
+                attributePointsToSpend: 0,
+                unlockedSkills: [],
+                inventory: [] // Array di item IDs
+            };
+
+            // Abilità/Oggetti iniziali (se ce ne sono per livello 1)
+            unlockContentForLevel(1, false); // false = non mostrare notifica per il livello 1
+
+            missions = [];
+            gameData = { lastDailyReset: null, lastWeeklyReset: null, activeDailyChallenge: null, activeWeeklyChallenge: null }; // Pulisci anche i dati di gioco
+
+            checkAndResetChallenges(); // Imposta le prime sfide
+            saveGameData();
+            showDashboard();
+            updateDashboardUI();
+            renderMissions();
+            showNotificationModal("Avventura Iniziata!", `Benvenuto, ${character.name}! La tua avventura scolastica ha inizio.`, "success");
+        });
+
+        charClassSelect.addEventListener('change', () => {
+            customCharClassNameInput.style.display = (charClassSelect.value === 'custom') ? 'block' : 'none';
+            customCharClassNameInput.required = (charClassSelect.value === 'custom');
+        });
+
+        // --- Aggiornamento UI Dashboard ---
+        function getEffectiveAttribute(attributeKey) {
+            if (!character || !character.attributes) return 0;
+            let baseValue = character.attributes[attributeKey] || 0;
+            if (character.inventory) {
+                character.inventory.forEach(itemId => {
+                    const item = ITEMS_DATABASE[itemId];
+                    if (item && item.type === 'passive_bonus' && item.effect && item.effect.attribute === attributeKey) {
+                        baseValue += item.effect.bonus;
+                    }
+                });
+            }
+            return Math.min(15, baseValue); // Mettiamo un cap un po' più alto con oggetti
+        }
+
+        function updateDashboardUI() {
+            if (!character) return;
+
+            playerNameDisplay.textContent = character.name;
+            playerClassDisplay.textContent = character.class;
+            playerAgeDisplay.textContent = character.age;
+            playerLevel.textContent = character.level;
+            playerXp.textContent = character.xp;
+
+            const xpForNext = calculateXpForNextLevel(character.level);
+            xpToNextLevelDisplay.textContent = xpForNext;
+            const progressPercentage = Math.min(100, (character.xp / xpForNext) * 100);
+            xpProgressBar.style.width = `${progressPercentage}%`;
+            xpProgressBar.textContent = `${Math.floor(progressPercentage)}%`;
+            xpProgressBar.setAttribute('aria-valuenow', progressPercentage);
+
+            // Attributi
+            attributesDisplay.innerHTML = '';
+            for (const attrKey in ATTRIBUTES_CONFIG) {
+                const effectiveValue = getEffectiveAttribute(attrKey);
+                const baseValue = character.attributes[attrKey];
+                let displayValue = `${effectiveValue}`;
+                if (effectiveValue > baseValue) {
+                    displayValue = `${baseValue} <span class="text-success">(+${effectiveValue - baseValue} da oggetti)</span> = ${effectiveValue}`;
+                }
+
+                const li = document.createElement('li');
+                li.innerHTML = `<strong>${ATTRIBUTES_CONFIG[attrKey].name}:</strong> ${displayValue}`;
+                if (character.attributePointsToSpend > 0) {
+                    const btn = document.createElement('button');
+                    btn.textContent = '+';
+                    btn.classList.add('btn', 'btn-outline-success', 'btn-sm', 'ml-2', 'py-0', 'px-1');
+                    btn.disabled = character.attributes[attrKey] >= 10; // Cap per punti base
+                    btn.onclick = () => spendAttributePoint(attrKey);
+                    li.appendChild(btn);
+                }
+                attributesDisplay.appendChild(li);
+            }
+
+            if (character.attributePointsToSpend > 0) {
+                attributePointsToSpendInfo.textContent = `${character.attributePointsToSpend} Punti da Assegnare!`;
+                attributePointsToSpendInfo.style.display = 'inline-block';
+            } else {
+                attributePointsToSpendInfo.style.display = 'none';
+            }
+
+            // Abilità
+            unlockedSkillsDisplay.innerHTML = '';
+            if (character.unlockedSkills.length === 0) {
+                unlockedSkillsDisplay.innerHTML = '<p>Nessuna abilità sbloccata. Sali di livello!</p>';
+            } else {
+                character.unlockedSkills.forEach(skillId => {
+                    const skill = findSkill(skillId); // Trova l'oggetto skill completo
+                    if (skill) {
+                        const skillDiv = document.createElement('div');
+                        skillDiv.classList.add('skill');
+                        skillDiv.textContent = skill.name;
+                        skillDiv.title = "Clicca per dettagli";
+                        skillDiv.onclick = () => showNotificationModal(`Abilità: ${skill.name}`, skill.description);
+                        unlockedSkillsDisplay.appendChild(skillDiv);
+                    }
+                });
+            }
+
+            // Inventario
+            inventoryDisplay.innerHTML = '';
+            if (character.inventory.length === 0) {
+                inventoryDisplay.innerHTML = '<p>Il tuo inventario è vuoto.</p>';
+            } else {
+                character.inventory.forEach(itemId => {
+                    const item = ITEMS_DATABASE[itemId];
+                    if (item) {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.classList.add('inventory-item', 'd-flex', 'align-items-center');
+                        itemDiv.title = "Clicca per dettagli";
+                        itemDiv.innerHTML = `<span class="item-icon">${item.icon || '❓'}</span> <span>${item.name}</span>`;
+                        itemDiv.onclick = () => {
+                            let detailMsg = item.description;
+                            if (item.type === 'guide' && item.unlocksSkillTip) {
+                                detailMsg += `<hr><strong>Suggerimento Sbloccato: ${item.unlocksSkillTip.name}</strong><p>${item.unlocksSkillTip.description}</p>`;
+                            }
+                            showNotificationModal(`Oggetto: ${item.name}`, detailMsg);
+                        };
+                        inventoryDisplay.appendChild(itemDiv);
+                    }
+                });
+            }
+            // Aggiorna anche le sfide
+            renderChallenges();
+        }
+
+        function findSkill(skillId) { // Trova skill da ID in SKILLS_BY_LEVEL
+            for (const level in SKILLS_BY_LEVEL) {
+                const skill = SKILLS_BY_LEVEL[level].find(s => s.id === skillId);
+                if (skill) return skill;
+            }
+            return null;
+        }
+
+        function spendAttributePoint(attributeKey) {
+            if (character.attributePointsToSpend > 0 && character.attributes[attributeKey] < 10) { // Cap a 10 per punti base
+                character.attributes[attributeKey]++;
+                character.attributePointsToSpend--;
+                updateDashboardUI();
+                saveGameData();
+            }
+        }
+
+        // --- Livellamento e Contenuti Sbloccabili ---
+        function calculateXpForNextLevel(level) {
+            return 50 + (level * 50 * 1.1); // Curva leggermente più ripida
+        }
+
+        function checkLevelUp() {
+            let leveledUp = false;
+            let xpForNext = calculateXpForNextLevel(character.level);
+            let notifications = [];
+
+            while (character.xp >= xpForNext) {
+                character.level++;
+                character.xp -= xpForNext;
+                leveledUp = true;
+                character.attributePointsToSpend += 1; // 1 punto attributo per livello
+
+                notifications.push(`Sei salito al Livello ${character.level}!`);
+                const unlockedContentMessages = unlockContentForLevel(character.level);
+                notifications = notifications.concat(unlockedContentMessages);
+
+                xpForNext = calculateXpForNextLevel(character.level);
+            }
+
+            if (leveledUp) {
+                let fullNotification = `🎉 **LEVEL UP!** 🎉<br>${notifications.join("<br>")}`;
+                fullNotification += `<br>Hai ${character.attributePointsToSpend} punti attributo da spendere.`;
+                showNotificationModal("Avanzamento di Livello!", fullNotification, "success");
+            }
+        }
+
+        function unlockContentForLevel(level, showNotification = true) {
+            let unlockedMessages = [];
+            // Sblocca Abilità
+            if (SKILLS_BY_LEVEL[level]) {
+                SKILLS_BY_LEVEL[level].forEach(skill => {
+                    if (!character.unlockedSkills.includes(skill.id)) {
+                        character.unlockedSkills.push(skill.id);
+                        if (showNotification) unlockedMessages.push(`Nuova Abilità: ${skill.name}!`);
+                    }
+                });
+            }
+            // Sblocca Oggetti
+            if (ITEMS_BY_LEVEL[level]) {
+                ITEMS_BY_LEVEL[level].forEach(itemId => {
+                    addItemToInventory(itemId, showNotification); // La notifica dell'oggetto è gestita da addItemToInventory
+                });
+            }
+            return unlockedMessages; // Restituisce messaggi per notifica aggregata di level up
+        }
+
+
+        // --- Gestione Missioni ---
+        addMissionForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const title = document.getElementById('mission-title').value.trim();
+            const description = document.getElementById('mission-description').value.trim();
+            const subject = document.getElementById('mission-subject').value.trim();
+            const xpReward = parseInt(document.getElementById('mission-xp-reward').value);
+            const attributeBoost = document.getElementById('mission-attribute-boost').value;
+            const itemReward = document.getElementById('mission-item-reward').value;
+
+            if(!title) {
+                showNotificationModal("Errore Missione", "Il titolo della missione è obbligatorio.", "error");
+                return;
+            }
+
+            const newMission = {
+                id: Date.now().toString(),
+                title, description, subject, xpReward, attributeBoost, itemReward,
+                completed: false
+            };
+            missions.unshift(newMission);
+            addMissionForm.reset(); // Pulisce il form
+            document.getElementById('mission-item-reward').value = ""; // Assicurati che la select item sia resettata
+            renderMissions();
+            saveGameData();
+        });
+
+        function renderMissions() {
+            activeMissionsList.innerHTML = '';
+            completedMissionsList.innerHTML = '';
+            let activeCount = 0;
+            let completedCount = 0;
+
+            if (missions.length === 0) {
+                activeMissionsList.innerHTML = '<p>Nessuna missione. Aggiungine una per iniziare!</p>';
+            }
+
+            missions.forEach(mission => {
+                const missionCard = document.createElement('div');
+                missionCard.classList.add('card', 'mission-card', 'mb-2');
+                const itemRewardDetails = mission.itemReward && ITEMS_DATABASE[mission.itemReward] ? `<li>Ricompensa Oggetto: ${ITEMS_DATABASE[mission.itemReward].icon} ${ITEMS_DATABASE[mission.itemReward].name}</li>` : '';
+                const attributeBoostDetails = mission.attributeBoost && ATTRIBUTES_CONFIG[mission.attributeBoost] ? `<li>Boost: +1 ${ATTRIBUTES_CONFIG[mission.attributeBoost].name}</li>` : '';
+
+                missionCard.innerHTML = `
+                    <div class="card-body">
+                        <h5 class="card-title">${mission.title} ${mission.subject ? '<span class="badge badge-secondary ml-2">' + mission.subject + '</span>' : ''}</h5>
+                        ${mission.description ? `<p class="card-text">${mission.description}</p>` : ''}
+                        <ul class="list-unstyled small text-muted">
+                            <li>Ricompensa XP: ${mission.xpReward}</li>
+                            ${attributeBoostDetails}
+                            ${itemRewardDetails}
+                        </ul>
+                        <div class="mt-2">
+                            ${!mission.completed ? `<button class="btn btn-success btn-sm complete-mission-btn" data-id="${mission.id}"><i class="fas fa-check"></i> Completa</button>` : '<span class="text-success font-weight-bold">Completata!</span>'}
+                            <button class="btn btn-danger btn-sm delete-mission-btn ml-2" data-id="${mission.id}"><i class="fas fa-trash"></i> Elimina</button>
+                        </div>
+                    </div>
+                `;
+
+                if (mission.completed) {
+                    missionCard.classList.add('completed-mission');
+                    completedMissionsList.appendChild(missionCard);
+                    completedCount++;
+                } else {
+                    activeMissionsList.appendChild(missionCard);
+                    activeCount++;
+                }
+            });
+            activeMissionsCount.textContent = activeCount;
+            completedMissionsCount.textContent = completedCount;
+            if(activeCount === 0 && missions.length > 0) activeMissionsList.innerHTML = '<p>Tutte le missioni aggiunte sono state completate! Aggiungine di nuove.</p>';
+
+
+            document.querySelectorAll('.complete-mission-btn').forEach(button => {
+                button.addEventListener('click', (e) => completeMission(e.currentTarget.dataset.id));
+            });
+            document.querySelectorAll('.delete-mission-btn').forEach(button => {
+                button.addEventListener('click', (e) => deleteMission(e.currentTarget.dataset.id));
+            });
+        }
+
+        function completeMission(missionId) {
+            const mission = missions.find(m => m.id === missionId);
+            if (mission && !mission.completed) {
+                mission.completed = true;
+                character.xp += mission.xpReward;
+
+                let notificationParts = [`+${mission.xpReward} XP`];
+
+                if (mission.attributeBoost && character.attributes[mission.attributeBoost]) {
+                    character.attributes[mission.attributeBoost] = Math.min(10, character.attributes[mission.attributeBoost] + 1);
+                    notificationParts.push(`Attributo ${ATTRIBUTES_CONFIG[mission.attributeBoost].name} +1!`);
+                }
+                if (mission.itemReward) {
+                    addItemToInventory(mission.itemReward, true); // La notifica dell'oggetto è gestita qui
+                }
+
+                showNotificationModal("Missione Completata!", `"${mission.title}" completata!<br>${notificationParts.join("<br>")}`, "success");
+                checkLevelUp();
+                updateDashboardUI();
+                renderMissions();
+                saveGameData();
+            }
+        }
+
+        function deleteMission(missionId) {
+            missions = missions.filter(m => m.id !== missionId);
+            renderMissions();
+            saveGameData();
+        }
+
+        // --- Gestione Inventario ---
+        function addItemToInventory(itemId, showNotification = true) {
+            const item = ITEMS_DATABASE[itemId];
+            if (item && !character.inventory.includes(itemId)) { // Evita duplicati se l'oggetto è unico
+                character.inventory.push(itemId);
+                if (showNotification) {
+                     showNotificationModal("Oggetto Ottenuto!", `Hai trovato: ${item.icon} <strong>${item.name}</strong>!<br><em>${item.description}</em>`, "success");
+                }
+                return true;
+            }
+            return false;
+        }
+
+
+        // --- Gestione Sfide Giornaliere/Settimanali ---
+        function checkAndResetChallenges() {
+            const today = getTodayDateString();
+            const startOfWeek = getStartOfWeekDateString();
+
+            // Sfida Giornaliera
+            if (gameData.lastDailyReset !== today) {
+                const availableDaily = DAILY_CHALLENGES_POOL.filter(c => !gameData.activeDailyChallenge || c.id !== gameData.activeDailyChallenge.challengeId);
+                const newDailyChallenge = availableDaily[Math.floor(Math.random() * availableDaily.length)];
+                if (newDailyChallenge) {
+                    gameData.activeDailyChallenge = { challengeId: newDailyChallenge.id, completed: false };
+                }
+                gameData.lastDailyReset = today;
+            }
+
+            // Sfida Settimanale
+            if (gameData.lastWeeklyReset !== startOfWeek) {
+                 const availableWeekly = WEEKLY_CHALLENGES_POOL.filter(c => !gameData.activeWeeklyChallenge || c.id !== gameData.activeWeeklyChallenge.challengeId);
+                const newWeeklyChallenge = availableWeekly[Math.floor(Math.random() * availableWeekly.length)];
+                if (newWeeklyChallenge) {
+                    gameData.activeWeeklyChallenge = { challengeId: newWeeklyChallenge.id, completed: false };
+                }
+                gameData.lastWeeklyReset = startOfWeek;
+            }
+            saveGameData(); // Salva subito dopo aver resettato le sfide
+        }
+
+        function renderChallenges() {
+            // Giornaliera
+            if (gameData.activeDailyChallenge && DAILY_CHALLENGES_POOL.find(c=> c.id === gameData.activeDailyChallenge.challengeId)) {
+                const challenge = DAILY_CHALLENGES_POOL.find(c=> c.id === gameData.activeDailyChallenge.challengeId);
+                dailyChallengeTitleDisplay.textContent = challenge.title;
+                dailyChallengeDisplay.style.display = 'block';
+                const attributeBoostDetails = challenge.attributeBoost && ATTRIBUTES_CONFIG[challenge.attributeBoost] ? `<li>Boost: +1 ${ATTRIBUTES_CONFIG[challenge.attributeBoost].name}</li>` : '';
+                dailyChallengeDisplay.innerHTML = `
+                    <p>${challenge.description}</p>
+                    <ul class="list-unstyled small text-muted">
+                        <li>Ricompensa XP: ${challenge.xp}</li>
+                        ${attributeBoostDetails}
+                    </ul>
+                    ${gameData.activeDailyChallenge.completed ? '<span class="text-success font-weight-bold">Completata Oggi!</span>' : `<button class="btn btn-sm btn-success complete-challenge-btn" data-type="daily">Completa Sfida</button>`}
+                `;
+                if(gameData.activeDailyChallenge.completed) dailyChallengeDisplay.classList.add('completed-challenge');
+                else dailyChallengeDisplay.classList.remove('completed-challenge');
+            } else {
+                dailyChallengeTitleDisplay.textContent = "Nessuna sfida giornaliera per oggi.";
+                dailyChallengeDisplay.style.display = 'none';
+            }
+
+            // Settimanale
+            if (gameData.activeWeeklyChallenge && WEEKLY_CHALLENGES_POOL.find(c=> c.id === gameData.activeWeeklyChallenge.challengeId)) {
+                const challenge = WEEKLY_CHALLENGES_POOL.find(c=> c.id === gameData.activeWeeklyChallenge.challengeId);
+                weeklyChallengeTitleDisplay.textContent = challenge.title;
+                weeklyChallengeDisplay.style.display = 'block';
+                const attributeBoostDetails = challenge.attributeBoost && ATTRIBUTES_CONFIG[challenge.attributeBoost] ? `<li>Boost: +1 ${ATTRIBUTES_CONFIG[challenge.attributeBoost].name}</li>` : '';
+
+                weeklyChallengeDisplay.innerHTML = `
+                    <p>${challenge.description}</p>
+                    <ul class="list-unstyled small text-muted">
+                        <li>Ricompensa XP: ${challenge.xp}</li>
+                         ${attributeBoostDetails}
+                    </ul>
+                    ${gameData.activeWeeklyChallenge.completed ? '<span class="text-success font-weight-bold">Completata Questa Settimana!</span>' : `<button class="btn btn-sm btn-success complete-challenge-btn" data-type="weekly">Completa Sfida</button>`}
+                `;
+                 if(gameData.activeWeeklyChallenge.completed) weeklyChallengeDisplay.classList.add('completed-challenge');
+                 else weeklyChallengeDisplay.classList.remove('completed-challenge');
+            } else {
+                weeklyChallengeTitleDisplay.textContent = "Nessuna sfida settimanale per questa settimana.";
+                weeklyChallengeDisplay.style.display = 'none';
+            }
+
+            document.querySelectorAll('.complete-challenge-btn').forEach(button => {
+                // Rimuovi vecchi listener per evitare duplicazioni
+                const newButton = button.cloneNode(true);
+                button.parentNode.replaceChild(newButton, button);
+                newButton.addEventListener('click', (e) => completeChallenge(e.currentTarget.dataset.type));
+            });
+        }
+
+        function completeChallenge(type) {
+            let challengeData, challengePool, challengeRef;
+            if (type === 'daily' && gameData.activeDailyChallenge && !gameData.activeDailyChallenge.completed) {
+                challengeData = gameData.activeDailyChallenge;
+                challengePool = DAILY_CHALLENGES_POOL;
+            } else if (type === 'weekly' && gameData.activeWeeklyChallenge && !gameData.activeWeeklyChallenge.completed) {
+                challengeData = gameData.activeWeeklyChallenge;
+                challengePool = WEEKLY_CHALLENGES_POOL;
+            } else {
+                return; // Sfida non trovata o già completata
+            }
+
+            const challenge = challengePool.find(c => c.id === challengeData.challengeId);
+            if (challenge) {
+                challengeData.completed = true;
+                character.xp += challenge.xp;
+                let notificationParts = [`+${challenge.xp} XP`];
+
+                if (challenge.attributeBoost && character.attributes[challenge.attributeBoost]) {
+                    character.attributes[challenge.attributeBoost] = Math.min(10, character.attributes[challenge.attributeBoost] + 1);
+                    notificationParts.push(`Attributo ${ATTRIBUTES_CONFIG[challenge.attributeBoost].name} +1!`);
+                }
+                showNotificationModal(`Sfida ${type === 'daily' ? 'Giornaliera' : 'Settimanale'} Completata!`, `"${challenge.title}" completata!<br>${notificationParts.join("<br>")}`, "success");
+                checkLevelUp();
+                updateDashboardUI(); // Questo richiamerà renderChallenges
+                saveGameData();
+            }
+        }
+
+        // --- Inizializzazione dell'Applicazione ---
+        loadGameData();
+
+    });
+    // JAVASCRIPT FINE
+    </script>
+    <script defer src="https://use.fontawesome.com/releases/v5.15.4/js/all.js"></script>
+</body>
+</html>
